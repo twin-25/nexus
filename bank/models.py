@@ -1,5 +1,6 @@
 from django.db import models
 import uuid
+from pgvector.django import VectorField
 
 # Create your models here.
 
@@ -15,6 +16,7 @@ class Entry(models.Model):
   type = models.CharField(max_length=20, choices=TYPE_CHOICES)
   title = models.CharField(max_length=100)
   organization = models.CharField(max_length=200,null=True, blank=True)
+  embedding = VectorField(dimensions=384, null=True, blank=True)
   raw = models.TextField()
   context = models.CharField(max_length=300, blank=True)
   start_date = models.DateField(null=True, blank=True)
