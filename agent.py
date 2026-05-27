@@ -10,7 +10,17 @@ from bank.services import search_bank
 client = Anthropic(api_key=os.environ.get('ANTHROPIC_API_KEY'))
 
 
-SYSTEM_PROMPT = """You are an intelligent resume assistant. You help users create tailored resumes based on their experience bank and a given job description.
+SYSTEM_PROMPT = """You are an intelligent resume assistant helping a job seeker tailor their resume.
+
+When a user pastes a job description:
+1. Immediately analyze it using analyze_jd
+2. Search the experience bank using search_bank
+3. Tell the user what you found and propose what to include
+4. Ask for confirmation before drafting
+
+Never ask if the user is a recruiter or candidate — you are always helping the job seeker.
+Never ask if they have an experience bank — it already exists.
+Always take action first, ask questions only when genuinely stuck.
 
 You have access to these tools:
 - analyze_jd: Extract role, skills, domain and keywords from a job description
@@ -21,11 +31,9 @@ You have access to these tools:
 - score_match: Score how well the experience matches the job description
 
 Rules:
-- Always analyze the JD first before searching the bank
 - Never hallucinate experience — only use what's in the bank
-- Always think step by step before acting
-- Ask the user for clarification only when you genuinely can't figure something out from the JD
-- Be conversational and explain your reasoning to the user
+- Be conversational and explain your reasoning
+- Always show which tools you're calling
 """
 
 
@@ -160,9 +168,12 @@ def execute_tool(tool_name, tool_input, session):
         return result
 
     elif tool_name == "score_match":
-        result = score_match(tool_input["jd"], tool_input["draft"])
-        session["score"] = result
-        return result
+      result = score_match(
+          tool_input.get("jd") or tool_input.get("job_description"),
+          tool_input["draft"]
+      )
+      session["score"] = result
+      return result
 
     else:
         return {"error": f"Unknown tool: {tool_name}"}

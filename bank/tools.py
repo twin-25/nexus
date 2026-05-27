@@ -49,7 +49,7 @@ def analyze_jd(job_description):
 
 
 def draft_section(entries, job_description, section):
-    entries_text = "\n\n".join([f"Title: {e.title}\nDetails: {e.raw}" for e in entries])
+    entries_text = "\n\n".join([f"Title: {e['title']}\nDetails: {e['raw']}" for e in entries])
     
     response = client.messages.create(
         model="claude-haiku-4-5",
