@@ -168,3 +168,80 @@ def execute_tool(tool_name, tool_input, session):
         return {"error": f"Unknown tool: {tool_name}"}
   
 
+
+        
+        
+def run_agent():
+    conversation_history = []
+    session = {
+        "jd": None,
+        "jd_analysis": None,
+        "relevant_entries": [],
+        "drafted_sections": {},
+        "score": None
+    }
+    
+    print("Resume Agent ready. Type 'quit' to exit.\n")
+
+    while True:
+        user_input = input("You: ").strip()
+        
+        if user_input.lower() == "quit":
+            break
+            
+        if not user_input:
+            continue
+
+        conversation_history.append({
+            "role": "user",
+            "content": user_input
+        })
+
+        while True:
+            response = client.messages.create(
+                model="claude-haiku-4-5",
+                max_tokens=4096,
+                system=SYSTEM_PROMPT,
+                tools=tools,
+                messages=conversation_history
+            )
+            
+            if response.stop_reason == "tool_use":
+                tool_results = []
+
+                for block in response.content:
+                    if block.type == "tool_use":
+                        print(f"\n[Agent calling: {block.name}]")
+                        result = execute_tool(block.name, block.input, session)
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": json.dumps(result, default=str)
+                        })
+
+                conversation_history.append({
+                    "role": "assistant",
+                    "content": response.content
+                })
+                conversation_history.append({
+                    "role": "user",
+                    "content": tool_results
+                })
+
+            elif response.stop_reason == "end_turn":
+                final_response = ""
+                for block in response.content:
+                    if hasattr(block, "text"):
+                        final_response += block.text
+                
+                print(f"\nAgent: {final_response}\n")
+                
+                conversation_history.append({
+                    "role": "assistant",
+                    "content": final_response
+                })
+                break
+
+
+if __name__ == "__main__":
+    run_agent()
